@@ -7,32 +7,23 @@ import {
 } from './queries';
 import { NewTodo } from '../todos/types';
 import { randomUUID } from 'crypto';
-import { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
-
-let db: BunSQLiteDatabase;
-
-beforeEach(async () => {
-  db = drizzle({ casing: 'snake_case' });
-  migrate(db, { migrationsFolder: './src/db/drizzle' });
-});
+import { db } from './db';
 
 describe('insertUser', () => {
   it('should insert a user into the database', async () => {
     const email = 'test@test.com';
     const password = 'password123';
-    const userId = await insertUser(db, email, password);
+    const userId = await insertUser(email, password);
     expect(userId).toBeDefined();
   });
 
   it('should throw an error if the email is already in the db', async () => {
     const email = 'test@test.com';
     const password = 'password123';
-    await insertUser(db, email, password);
+    await insertUser(email, password);
 
     try {
-      await insertUser(db, email, password);
+      await insertUser(email, password);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       // @ts-ignore
@@ -44,7 +35,7 @@ describe('insertUser', () => {
     const email = 'test@test.com';
     const password = '';
     try {
-      await insertUser(db, email, password);
+      await insertUser(email, password);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       // @ts-ignore
@@ -57,15 +48,15 @@ describe('getUserByEmail', () => {
   it('return a user by a given email', async () => {
     const email = 'test@test.com';
     const password = 'password123';
-    await insertUser(db, email, password);
+    await insertUser(email, password);
 
-    const user = getUserByEmail(db, email);
+    const user = getUserByEmail(email);
     expect(user).toBeDefined();
   });
 
   it('returns undefined when there is no user by that email', async () => {
     const email = 'test@test.com';
-    const user = getUserByEmail(db, email);
+    const user = await getUserByEmail(email);
     expect(user).toBeUndefined();
   });
 });
@@ -74,7 +65,7 @@ describe('insertTodo', () => {
   it('should insert a todo into the database', async () => {
     const email = 'test@test.com';
     const password = 'password123';
-    const userId = await insertUser(db, email, password);
+    const userId = await insertUser(email, password);
 
     const newTodo = {
       userId: userId,
@@ -82,7 +73,7 @@ describe('insertTodo', () => {
       description: 'This is a test todo',
       completed: false,
     } as NewTodo;
-    const todo = insertTodo(db, newTodo);
+    const todo = await insertTodo(newTodo);
 
     expect(todo).toBeDefined();
     expect(todo.id).toBeDefined();
@@ -94,7 +85,7 @@ describe('insertTodo', () => {
     expect(todo.updatedAt).toBeDefined();
   });
 
-  it('should throw an error if user_id does not exist', () => {
+  it('should throw an error if user_id does not exist', async () => {
     const newTodo = {
       userId: randomUUID(), // Non-existent user ID
       title: 'Test Todo',
@@ -103,7 +94,7 @@ describe('insertTodo', () => {
     } as NewTodo;
 
     try {
-      insertTodo(db, newTodo);
+      await insertTodo(newTodo);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       // @ts-ignore
@@ -114,7 +105,7 @@ describe('insertTodo', () => {
   it('should throw an error if title is empty', async () => {
     const email = 'test@test.com';
     const password = 'password123';
-    const userId = await insertUser(db, email, password);
+    const userId = await insertUser(email, password);
     const newTodo = {
       userId: userId,
       title: '', // Empty title
@@ -122,7 +113,7 @@ describe('insertTodo', () => {
       completed: false,
     } as NewTodo;
     try {
-      insertTodo(db, newTodo);
+      await insertTodo(newTodo);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
       // @ts-ignore
@@ -133,7 +124,7 @@ describe('insertTodo', () => {
 
 describe('getTodosByUserId', () => {
   it('should return todos for a given user ID', async () => {
-    const userId = await insertUser(db, 'test@test.com', 'password123');
+    const userId = await insertUser('test@test.com', 'password123');
 
     const newTodo1 = {
       userId: userId,
@@ -147,9 +138,9 @@ describe('getTodosByUserId', () => {
       description: 'This is the second test todo',
       completed: true,
     } as NewTodo;
-    insertTodo(db, newTodo1);
-    insertTodo(db, newTodo2);
-    const todos = getTodosByUserId(db, userId);
+    await insertTodo(newTodo1);
+    await insertTodo(newTodo2);
+    const todos = await getTodosByUserId(userId);
     expect(todos).toBeDefined();
     expect(todos.length).toBe(2);
     expect(todos[0].userId).toBe(userId);
