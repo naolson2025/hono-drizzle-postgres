@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { db } from '../db/db';
 import { signupValidator } from './signup.schema';
 import { getUserByEmail, getUserById, insertUser } from '../db/queries';
 import { cookieOpts, generateToken } from '../helpers';
@@ -13,7 +12,7 @@ auth
     const { email, password } = c.req.valid('json');
     try {
       // insert the user into the database
-      const userId = await insertUser(db, email, password);
+      const userId = await insertUser(email, password);
       // generate a JWT token
       const token = await generateToken(userId);
       // put that JWT into a cookie
@@ -41,7 +40,7 @@ auth
 
     try {
       // query user by email
-      const user = getUserByEmail(db, email);
+      const user = await getUserByEmail(email);
       if (!user) {
         return c.json({ errors: ['Invalid credentials'] }, 401);
       }
@@ -84,7 +83,7 @@ auth
 
     try {
       // fetch user by id
-      const user = getUserById(db, payload.sub);
+      const user = await getUserById(payload.sub);
       if (!user) {
         return c.json({ error: 'User not found' }, 404);
       }

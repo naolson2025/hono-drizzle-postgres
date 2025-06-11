@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   getTodosByUserId,
   getUserByEmail,
@@ -7,7 +7,6 @@ import {
 } from './queries';
 import { NewTodo } from '../todos/types';
 import { randomUUID } from 'crypto';
-import { db } from './db';
 
 describe('insertUser', () => {
   it('should insert a user into the database', async () => {
@@ -26,7 +25,7 @@ describe('insertUser', () => {
       await insertUser(email, password);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
-      // @ts-ignore
+      // @ts-expect-error we know its type error
       expect(error.message).toMatch(/UNIQUE constraint failed/);
     }
   });
@@ -38,7 +37,7 @@ describe('insertUser', () => {
       await insertUser(email, password);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
-      // @ts-ignore
+      // @ts-expect-error we know its type error
       expect(error.message).toMatch(/password must not be empty/);
     }
   });
@@ -97,7 +96,7 @@ describe('insertTodo', () => {
       await insertTodo(newTodo);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
-      // @ts-ignore
+      // @ts-expect-error we know its type error
       expect(error.message).toMatch(/FOREIGN KEY constraint failed/);
     }
   });
@@ -116,7 +115,7 @@ describe('insertTodo', () => {
       await insertTodo(newTodo);
     } catch (error) {
       expect(error).toBeInstanceOf(Error);
-      // @ts-ignore
+      // @ts-expect-error we know its type error
       expect(error.message).toMatch(/CHECK constraint failed/);
     }
   });
@@ -154,14 +153,14 @@ describe('getTodosByUserId', () => {
   });
 
   it('should return an empty array if no todos exist for the user', async () => {
-    const userId = await insertUser(db, 'test@test.com', 'password123');
-    const todos = getTodosByUserId(db, userId);
+    const userId = await insertUser('test@test.com', 'password123');
+    const todos = await getTodosByUserId(userId);
     expect(todos).toBeDefined();
     expect(todos.length).toBe(0);
   });
 
-  it('should return an empty array if user_id does not exist', () => {
-    const todos = getTodosByUserId(db, randomUUID()); // Non-existent user ID
+  it('should return an empty array if user_id does not exist', async () => {
+    const todos = await getTodosByUserId(randomUUID()); // Non-existent user ID
     expect(todos).toBeDefined();
     expect(todos.length).toBe(0);
   });

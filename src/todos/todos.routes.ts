@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { db } from '../db/db';
 import { insertTodo, getTodosByUserId } from '../db/queries';
 import { createTodoValidator } from './create.todo.schema';
 
@@ -11,7 +10,7 @@ todos
     const { title, description, completed } = c.req.valid('json');
 
     try {
-      const todo = insertTodo(db, {
+      const todo = await insertTodo({
         userId: sub,
         title,
         description,
@@ -28,7 +27,7 @@ todos
     const { sub } = c.get('jwtPayload');
 
     try {
-      const todos = getTodosByUserId(db, sub);
+      const todos = await getTodosByUserId(sub);
       return c.json(todos, 200);
     } catch (error) {
       console.error('Error fetching todos:', error);
