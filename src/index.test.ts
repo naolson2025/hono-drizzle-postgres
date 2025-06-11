@@ -1,16 +1,9 @@
 import { describe, expect, it, beforeEach, mock } from 'bun:test';
 import app from '.';
 import { loginReq, logoutReq, signupReq } from './test/test-helpers';
-import { drizzle } from 'drizzle-orm/bun-sqlite';
-import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 
 beforeEach(() => {
-  mock.module('../src/db/db.ts', () => {
-    const db = drizzle({ casing: 'snake_case' });
-    migrate(db, { migrationsFolder: './src/db/drizzle' });
-
-    return { db };
-  });
+  mock.module('../src/db/db.ts', () => {});
 });
 
 describe('signup endpoint', () => {
