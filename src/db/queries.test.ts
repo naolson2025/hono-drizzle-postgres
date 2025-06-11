@@ -18,6 +18,8 @@ import { randomUUID } from 'crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import * as schema from '../db/schema';
+import { join } from 'path';
 
 // Unique test DB name per run
 const TEST_DB_NAME = `test_db_${randomUUID().replace(/-/g, '')}`;
@@ -35,10 +37,10 @@ beforeAll(async () => {
 
   // 2. Connect to the test database and run migrations
   pool = new Pool({ connectionString: TEST_DB_URL });
-  db = drizzle(pool);
+  db = drizzle(pool, { schema, casing: 'snake_case' });
 
   // 3. Run migrations (adjust path as needed)
-  await migrate(db, { migrationsFolder: './src/db/drizzle' });
+  await migrate(db, { migrationsFolder: join(__dirname, '/drizzle') });
 
   // 4. Mock the db module to use our test db
   await mock.module('../db/db.ts', () => ({
@@ -157,9 +159,8 @@ describe('insertTodo', () => {
     try {
       await insertTodo(newTodo);
     } catch (error) {
-      expect(error).toBeInstanceOf(Error);
-      // @ts-expect-error we know its type error
-      expect(error.message).toMatch(/FOREIGN KEY constraint failed/);
+      // @ts-expect-error error may have 'message' or 'reason' depending on pg version
+      expect(error.cause.stack).toMatch(/violates foreign key constraint/);
     }
   });
 
