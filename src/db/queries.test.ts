@@ -20,6 +20,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import * as schema from '../db/schema';
 import { join } from 'path';
+import { DbError } from '../todos/types';
 
 // Unique test DB name per run
 const TEST_DB_NAME = `test_db_${randomUUID().replace(/-/g, '')}`;
@@ -88,9 +89,8 @@ describe('insertUser', () => {
     try {
       await insertUser(email, password);
     } catch (error) {
-      expect(error).toBeInstanceOf(Error);
-      // @ts-expect-error we know its type error
-      expect(error.message).toMatch(/UNIQUE constraint failed/);
+      const dbError = error as DbError;
+      expect(dbError.cause.stack).toMatch(/violates unique constraint/);
     }
   });
 
@@ -159,8 +159,8 @@ describe('insertTodo', () => {
     try {
       await insertTodo(newTodo);
     } catch (error) {
-      // @ts-expect-error error may have 'message' or 'reason' depending on pg version
-      expect(error.cause.stack).toMatch(/violates foreign key constraint/);
+      const dbError = error as DbError;
+      expect(dbError.cause.stack).toMatch(/violates foreign key constraint/);
     }
   });
 
@@ -194,12 +194,14 @@ describe('getTodosByUserId', () => {
       description: 'This is the first test todo',
       completed: false,
     } as NewTodo;
+
     const newTodo2 = {
       userId: userId,
       title: 'Test Todo 2',
       description: 'This is the second test todo',
       completed: true,
     } as NewTodo;
+
     await insertTodo(newTodo1);
     await insertTodo(newTodo2);
     const todos = await getTodosByUserId(userId);
@@ -207,12 +209,12 @@ describe('getTodosByUserId', () => {
     expect(todos.length).toBe(2);
     expect(todos[0].userId).toBe(userId);
     expect(todos[1].userId).toBe(userId);
-    expect(todos[0].title).toBe(newTodo1.title);
-    expect(todos[1].title).toBe(newTodo2.title);
-    expect(todos[0].description).toBe(newTodo1.description!);
-    expect(todos[1].description).toBe(newTodo2.description!);
-    expect(todos[0].completed).toBeFalsy();
-    expect(todos[1].completed).toBeTruthy();
+    expect(todos[0].title).toBe(newTodo2.title);
+    expect(todos[1].title).toBe(newTodo1.title);
+    expect(todos[0].description).toBe(newTodo2.description!);
+    expect(todos[1].description).toBe(newTodo1.description!);
+    expect(todos[0].completed).toBeTruthy();
+    expect(todos[1].completed).toBeFalsy();
   });
 
   it('should return an empty array if no todos exist for the user', async () => {
