@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 import {
   getTodosByUserId,
   getUserByEmail,
@@ -11,12 +19,13 @@ import { DbError } from '../todos/types';
 import {
   createTestDb,
   destroyTestDb,
+  resetDb,
   TestDbContext,
 } from '../test/setup-test-db';
 
 let ctx: TestDbContext;
 
-beforeEach(async () => {
+beforeAll(async () => {
   ctx = await createTestDb();
 
   await mock.module('../db/db.ts', () => ({
@@ -25,6 +34,10 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  await resetDb(ctx);
+});
+
+afterAll(async () => {
   await destroyTestDb(ctx);
 });
 

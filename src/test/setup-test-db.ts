@@ -30,6 +30,21 @@ export async function createTestDb(): Promise<TestDbContext> {
   return { pool, db, testDbName };
 }
 
+export async function resetDb(ctx: TestDbContext) {
+  await ctx.db.execute(`
+    DO $$ DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN (
+        SELECT tablename FROM pg_tables
+        WHERE schemaname = 'public'
+      ) LOOP
+        EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' RESTART IDENTITY CASCADE';
+      END LOOP;
+    END $$;
+  `);
+}
+
 export async function destroyTestDb({ pool, testDbName }: TestDbContext) {
   await pool.end();
 
