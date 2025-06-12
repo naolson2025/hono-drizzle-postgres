@@ -1,12 +1,4 @@
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  mock,
-} from 'bun:test';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 import {
   getTodosByUserId,
   getUserByEmail,
@@ -15,62 +7,25 @@ import {
 } from './queries';
 import { NewTodo } from '../todos/types';
 import { randomUUID } from 'crypto';
-import { Pool } from 'pg';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import * as schema from '../db/schema';
-import { join } from 'path';
 import { DbError } from '../todos/types';
+import {
+  createTestDb,
+  destroyTestDb,
+  TestDbContext,
+} from '../test/setup-test-db';
 
-// Unique test DB name per run
-const TEST_DB_NAME = `test_db_${randomUUID().replace(/-/g, '')}`;
-const TEST_DB_URL = `postgres://test_user:password@localhost:5432/${TEST_DB_NAME}`;
-const ADMIN_DB_URL = `postgres://test_user:password@localhost:5432/todos`;
+let ctx: TestDbContext;
 
-let pool: Pool;
-let db: ReturnType<typeof drizzle>;
+beforeEach(async () => {
+  ctx = await createTestDb();
 
-beforeAll(async () => {
-  // 1. Create the test database using superuser connection
-  const adminPool = new Pool({ connectionString: ADMIN_DB_URL });
-  await adminPool.query(`CREATE DATABASE "${TEST_DB_NAME}"`);
-  await adminPool.end();
-
-  // 2. Connect to the test database and run migrations
-  pool = new Pool({ connectionString: TEST_DB_URL });
-  db = drizzle(pool, { schema, casing: 'snake_case' });
-
-  // 3. Run migrations (adjust path as needed)
-  await migrate(db, { migrationsFolder: join(__dirname, '/drizzle') });
-
-  // 4. Mock the db module to use our test db
   await mock.module('../db/db.ts', () => ({
-    db,
+    db: ctx.db,
   }));
 });
 
 afterEach(async () => {
-  // truncate tables after each test
-  await db.execute(`TRUNCATE TABLE users, todos RESTART IDENTITY CASCADE;`);
-});
-
-afterAll(async () => {
-  // 1. Close pool connections to the test DB
-  await pool.end();
-
-  // 2. Drop the test database using admin connection
-  const adminPool = new Pool({ connectionString: ADMIN_DB_URL });
-  // Terminate any remaining connections to allow drop
-  await adminPool.query(
-    `
-    SELECT pg_terminate_backend(pid)
-    FROM pg_stat_activity
-    WHERE datname = $1 AND pid <> pg_backend_pid()
-  `,
-    [TEST_DB_NAME]
-  );
-  await adminPool.query(`DROP DATABASE IF EXISTS "${TEST_DB_NAME}"`);
-  await adminPool.end();
+  await destroyTestDb(ctx);
 });
 
 describe('insertUser', () => {
