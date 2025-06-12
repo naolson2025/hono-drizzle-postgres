@@ -3,6 +3,7 @@ import { signupValidator } from './signup.schema';
 import { getUserByEmail, getUserById, insertUser } from '../db/queries';
 import { cookieOpts, generateToken } from '../helpers';
 import { deleteCookie, setCookie } from 'hono/cookie';
+import { isDbError } from '../db/helpers';
 
 export const auth = new Hono();
 
@@ -23,13 +24,10 @@ auth
         user: { id: userId, email },
       });
     } catch (error) {
-      // send an error message
-      if (
-        error instanceof Error &&
-        error.message.includes('UNIQUE constraint failed')
-      ) {
+      if (isDbError(error) && error.cause.code === '23505') {
         return c.json({ errors: ['Email already exists'] }, 409);
       }
+
       console.error('signup error: ', error);
       return c.json({ errors: ['Internal server error'] }, 500);
     }

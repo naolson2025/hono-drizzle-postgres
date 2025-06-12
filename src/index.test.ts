@@ -1,9 +1,37 @@
-import { describe, expect, it, beforeEach, mock } from 'bun:test';
+import {
+  describe,
+  expect,
+  it,
+  mock,
+  afterAll,
+  afterEach,
+  beforeAll,
+} from 'bun:test';
 import app from '.';
 import { loginReq, logoutReq, signupReq } from './test/test-helpers';
+import {
+  TestDbContext,
+  createTestDb,
+  resetDb,
+  destroyTestDb,
+} from './test/setup-test-db';
 
-beforeEach(() => {
-  mock.module('../src/db/db.ts', () => {});
+let ctx: TestDbContext;
+
+beforeAll(async () => {
+  ctx = await createTestDb();
+
+  await mock.module('../src/db/db.ts', () => ({
+    db: ctx.db,
+  }));
+});
+
+afterEach(async () => {
+  await resetDb(ctx);
+});
+
+afterAll(async () => {
+  await destroyTestDb(ctx);
 });
 
 describe('signup endpoint', () => {
