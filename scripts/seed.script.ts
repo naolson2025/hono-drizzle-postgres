@@ -1,8 +1,8 @@
-import * as schema from './schema';
+import * as schema from '../src/db/schema';
 import { seed } from 'drizzle-seed';
-import { db, pool } from './db';
+import { db, pool } from '../src/db/db';
 
-const seedDb = async () => {
+export const seedDb = async () => {
   await seed(db, schema).refine((funcs) => ({
     usersTable: {
       columns: {
