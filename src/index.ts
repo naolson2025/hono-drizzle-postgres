@@ -26,6 +26,9 @@ app
     await next();
   })
   .route('/api', auth)
-  .route('/api/protected', todos);
+  .route('/api/protected', todos)
+  .get('/health', (c) => {
+    return c.json({ status: 'healthy!! 🍀' });
+  });
 
 export default app;
