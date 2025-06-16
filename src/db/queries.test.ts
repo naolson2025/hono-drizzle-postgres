@@ -1,12 +1,4 @@
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-  mock,
-} from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   getTodosByUserId,
   getUserByEmail,
@@ -17,31 +9,7 @@ import {
 import { NewTodo } from '../todos/types';
 import { randomUUID } from 'crypto';
 import { DbError } from '../todos/types';
-import {
-  createTestDb,
-  destroyTestDb,
-  resetDb,
-  TestDbContext,
-} from '../test/setup-test-db';
 import type { UUID } from 'crypto';
-
-let ctx: TestDbContext;
-
-beforeAll(async () => {
-  ctx = await createTestDb();
-
-  await mock.module('../db/db.ts', () => ({
-    db: ctx.db,
-  }));
-});
-
-afterEach(async () => {
-  await resetDb(ctx);
-});
-
-afterAll(async () => {
-  await destroyTestDb(ctx);
-});
 
 describe('insertUser', () => {
   it('should insert a user into the database', async () => {

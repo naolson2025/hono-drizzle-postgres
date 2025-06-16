@@ -1,38 +1,6 @@
-import {
-  describe,
-  expect,
-  it,
-  mock,
-  afterAll,
-  afterEach,
-  beforeAll,
-} from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import app from '.';
 import { loginReq, logoutReq, signupReq } from './test/test-helpers';
-import {
-  TestDbContext,
-  createTestDb,
-  resetDb,
-  destroyTestDb,
-} from './test/setup-test-db';
-
-let ctx: TestDbContext;
-
-beforeAll(async () => {
-  ctx = await createTestDb();
-
-  await mock.module('../src/db/db.ts', () => ({
-    db: ctx.db,
-  }));
-});
-
-afterEach(async () => {
-  await resetDb(ctx);
-});
-
-afterAll(async () => {
-  await destroyTestDb(ctx);
-});
 
 describe('signup endpoint', () => {
   it('should signup a user', async () => {
