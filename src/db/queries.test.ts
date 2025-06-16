@@ -12,6 +12,7 @@ import {
   getUserByEmail,
   insertTodo,
   insertUser,
+  deleteTodo,
 } from './queries';
 import { NewTodo } from '../todos/types';
 import { randomUUID } from 'crypto';
@@ -22,6 +23,7 @@ import {
   resetDb,
   TestDbContext,
 } from '../test/setup-test-db';
+import type { UUID } from 'crypto';
 
 let ctx: TestDbContext;
 
@@ -196,5 +198,36 @@ describe('getTodosByUserId', () => {
     const todos = await getTodosByUserId(randomUUID()); // Non-existent user ID
     expect(todos).toBeDefined();
     expect(todos.length).toBe(0);
+  });
+});
+
+describe('deleteTodo', () => {
+  it('should delete a todo by ID', async () => {
+    const userId = await insertUser('test@test.com', 'password123');
+    const newTodo = {
+      userId: userId,
+      title: 'Test Todo',
+      description: 'This is a test todo',
+      completed: false,
+    } as NewTodo;
+    const todo = await insertTodo(newTodo);
+    const deletedTodo = await deleteTodo(todo.id as UUID);
+    expect(deletedTodo).toBeDefined();
+    expect(deletedTodo.id).toBe(todo.id);
+  });
+
+  it('should return undefined if the todo does not exist', async () => {
+    const deletedTodo = await deleteTodo(randomUUID()); // Non-existent todo ID
+    expect(deletedTodo).toBeUndefined();
+  });
+
+  it('should throw an error if the todo ID is invalid', async () => {
+    try {
+      await deleteTodo('invalid-uuid' as UUID); // Invalid UUID
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      const dbError = error as DbError;
+      expect(dbError.cause.stack).toMatch(/invalid input syntax for type uuid/);
+    }
   });
 });

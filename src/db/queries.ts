@@ -2,6 +2,7 @@ import { NewTodo } from '../todos/types';
 import { todosTable, usersTable } from './schema';
 import { eq, desc } from 'drizzle-orm';
 import { db } from './db';
+import type { UUID } from 'crypto';
 
 export const insertUser = async (email: string, password: string) => {
   const passwordHash = await Bun.password.hash(password);
@@ -14,7 +15,7 @@ export const insertUser = async (email: string, password: string) => {
     })
     .returning();
 
-  return user.id;
+  return user.id as UUID;
 };
 
 export const getUserByEmail = async (email: string) => {
@@ -26,7 +27,7 @@ export const getUserByEmail = async (email: string) => {
   return user;
 };
 
-export const getUserById = async (id: string) => {
+export const getUserById = async (id: UUID) => {
   const [user] = await db
     .select({ id: usersTable.id, email: usersTable.email })
     .from(usersTable)
@@ -41,7 +42,7 @@ export const insertTodo = async (todo: NewTodo) => {
   return result;
 };
 
-export const getTodosByUserId = async (userId: string) => {
+export const getTodosByUserId = async (userId: UUID) => {
   const todos = await db
     .select()
     .from(todosTable)
@@ -49,4 +50,13 @@ export const getTodosByUserId = async (userId: string) => {
     .orderBy(desc(todosTable.createdAt));
 
   return todos;
+};
+
+export const deleteTodo = async (todoId: UUID) => {
+  const [result] = await db
+    .delete(todosTable)
+    .where(eq(todosTable.id, todoId))
+    .returning();
+
+  return result;
 };
