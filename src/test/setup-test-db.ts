@@ -23,7 +23,11 @@ export async function createTestDb(): Promise<TestDbContext> {
   await adminPool.end();
 
   // 2. Connect and migrate
-  const pool = new Pool({ connectionString: testDbUrl, max: 10 });
+  const pool = new Pool({
+    connectionString: testDbUrl,
+    max: 10,
+    idleTimeoutMillis: 30000,
+  });
   const db = drizzle(pool, { schema, casing: 'snake_case' });
   await migrate(db, { migrationsFolder: join(__dirname, '../db/drizzle') });
 
@@ -31,18 +35,31 @@ export async function createTestDb(): Promise<TestDbContext> {
 }
 
 export async function resetDb(ctx: TestDbContext) {
-  await ctx.db.execute(`
-    DO $$ DECLARE
-      r RECORD;
-    BEGIN
-      FOR r IN (
-        SELECT tablename FROM pg_tables
-        WHERE schemaname = 'public'
-      ) LOOP
-        EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' RESTART IDENTITY CASCADE';
-      END LOOP;
-    END $$;
+  console.log('Resetting test database...');
+
+  // await ctx.db.execute(`
+  //   DO $$ DECLARE
+  //     r RECORD;
+  //   BEGIN
+  //     FOR r IN (
+  //       SELECT tablename FROM pg_tables
+  //       WHERE schemaname = 'public'
+  //     ) LOOP
+  //       EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' RESTART IDENTITY CASCADE';
+  //     END LOOP;
+  //   END $$;
+  // `);
+
+  // Get all table names in the public schema
+  const { rows } = await ctx.pool.query(`
+    SELECT tablename FROM pg_tables WHERE schemaname = 'public'
   `);
+
+  if (rows.length > 0) {
+    const tables = rows.map((r) => `"${r.tablename}"`).join(', ');
+    // Truncate all tables in a single statement
+    await ctx.pool.query(`TRUNCATE TABLE ${tables} RESTART IDENTITY CASCADE;`);
+  }
 }
 
 export async function destroyTestDb({ pool, testDbName }: TestDbContext) {
