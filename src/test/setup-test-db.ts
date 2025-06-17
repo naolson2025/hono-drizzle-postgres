@@ -35,8 +35,6 @@ export async function createTestDb(): Promise<TestDbContext> {
 }
 
 export async function resetDb(ctx: TestDbContext) {
-  console.log('Resetting test database...');
-
   // await ctx.db.execute(`
   //   DO $$ DECLARE
   //     r RECORD;
