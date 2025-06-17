@@ -23,7 +23,7 @@ export async function createTestDb(): Promise<TestDbContext> {
   await adminPool.end();
 
   // 2. Connect and migrate
-  const pool = new Pool({ connectionString: testDbUrl });
+  const pool = new Pool({ connectionString: testDbUrl, max: 10 });
   const db = drizzle(pool, { schema, casing: 'snake_case' });
   await migrate(db, { migrationsFolder: join(__dirname, '../db/drizzle') });
 
