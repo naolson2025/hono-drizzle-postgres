@@ -64,6 +64,7 @@ export async function destroyTestDb({ pool, testDbName }: TestDbContext) {
   await pool.end();
 
   const adminPool = new Pool({ connectionString: adminDbUrl });
+  // terminate all active connections to a PostgreSQL database except the current one running this query
   await adminPool.query(
     `
     SELECT pg_terminate_backend(pid)
