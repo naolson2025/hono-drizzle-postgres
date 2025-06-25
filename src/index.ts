@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { csrf } from 'hono/csrf';
-import { jwt } from 'hono/jwt';
-import { auth } from './auth/auth.routes';
+// import { jwt } from 'hono/jwt';
+// import { auth } from './auth/auth.routes';
 import { todos } from './todos/todos.routes';
 import { logger } from 'hono/logger';
+import { auth } from './lib/auth';
 
 const secret = process.env.JWT_SECRET;
 if (!secret) {
@@ -23,14 +24,15 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 app
+  .use('/api/protected/**', (c) => auth.handler(c.req.raw))
   .use('/api/*', csrf())
-  .use('*', async (c, next) => {
-    if (c.req.path.includes('protected')) {
-      return jwt({ secret, cookie: 'authToken' })(c, next);
-    }
-    await next();
-  })
-  .route('/api', auth)
+  // .use('*', async (c, next) => {
+  //   if (c.req.path.includes('protected')) {
+  //     return jwt({ secret, cookie: 'authToken' })(c, next);
+  //   }
+  //   await next();
+  // })
+  // .route('/api', auth)
   .route('/api/protected', todos)
   .get('/health', (c) => {
     return c.json({ status: 'healthy!! 🍀' });
