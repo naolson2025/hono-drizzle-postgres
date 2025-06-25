@@ -3,6 +3,7 @@ import { csrf } from 'hono/csrf';
 import { jwt } from 'hono/jwt';
 import { auth } from './auth/auth.routes';
 import { todos } from './todos/todos.routes';
+import { logger } from 'hono/logger';
 
 const secret = process.env.JWT_SECRET;
 if (!secret) {
@@ -18,6 +19,7 @@ if (!process.env.DATABASE_URL) {
 const app = new Hono();
 
 app
+  .use(logger())
   .use('/api/*', csrf())
   .use('*', async (c, next) => {
     if (c.req.path.includes('protected')) {

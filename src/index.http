@@ -17,7 +17,7 @@ POST http://localhost:3000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "no@test.com",
+  "email": "necessary_cheetara@hotmail.co.uk",
   "password": "password123"
 }
 
@@ -25,7 +25,7 @@ Content-Type: application/json
 GET http://localhost:3000/api/auth/protected/me
 Cookie: {{login.response.headers.Set-Cookie}}
 
-###
+### Make Todo
 POST http://localhost:3000/api/protected/todos
 Content-Type: application/json
 Cookie: {{login.response.headers.Set-Cookie}}
@@ -36,6 +36,17 @@ Cookie: {{login.response.headers.Set-Cookie}}
   "completed": false
 }
 
-###
+### Get all todos for a user
 GET http://localhost:3000/api/protected/todos
 Cookie: {{login.response.headers.Set-Cookie}}
+
+### Update a todo
+PATCH http://localhost:3000/api/protected/todos/4f70a63d-f619-4371-ec22-b5429d28ac90
+Content-Type: application/json
+Cookie: {{login.response.headers.Set-Cookie}}
+
+{
+  "title": "find lost treasure",
+  "description": "in the basement",
+  "completed": true
+}

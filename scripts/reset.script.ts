@@ -42,7 +42,7 @@ async function runMigrations() {
 async function runSeed() {
   // You can run your seed script as a child process:
   const { execSync } = await import('child_process');
-  execSync('npm run db:seed', { stdio: 'inherit' });
+  execSync('bun run db:seed', { stdio: 'inherit' });
 }
 
 async function main() {
