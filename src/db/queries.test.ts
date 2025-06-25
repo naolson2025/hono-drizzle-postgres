@@ -5,6 +5,7 @@ import {
   insertTodo,
   insertUser,
   deleteTodo,
+  updateTodo,
 } from './queries';
 import { NewTodo } from '../todos/types';
 import { randomUUID } from 'crypto';
@@ -197,5 +198,82 @@ describe('deleteTodo', () => {
       const dbError = error as DbError;
       expect(dbError.cause.stack).toMatch(/invalid input syntax for type uuid/);
     }
+  });
+});
+
+describe('updateTodo', () => {
+  it('should update a todo by ID', async () => {
+    const userId = await insertUser('test@test.com', 'password123');
+    const newTodo = {
+      userId: userId,
+      title: 'Test Todo',
+      description: 'This is a test todo',
+      completed: false,
+    } as NewTodo;
+    const todo = await insertTodo(newTodo);
+    const update = {
+      title: 'Updated Test Todo',
+      description: 'This is an updated test todo',
+      completed: true,
+    };
+    const updatedTodo = await updateTodo(todo.id as UUID, userId, update);
+    expect(updatedTodo).toBeDefined();
+    expect(updatedTodo.id).toBe(todo.id);
+    expect(updatedTodo.title).toBe(update.title);
+    expect(updatedTodo.description).toBe(update.description);
+    expect(updatedTodo.completed).toBeTruthy();
+  });
+
+  it('should return undefined if the todo does not exist', async () => {
+    const update = {
+      title: 'Updated Test Todo',
+      description: 'This is an updated test todo',
+      completed: true,
+    };
+    const updatedTodo = await updateTodo(
+      randomUUID() as UUID,
+      randomUUID() as UUID,
+      update
+    ); // Non-existent todo ID
+    expect(updatedTodo).toBeUndefined();
+  });
+
+  it('should update a todo with partial fields', async () => {
+    const userId = await insertUser('test@test.com', 'password123');
+    const newTodo = {
+      userId: userId,
+      title: 'Test Todo',
+      description: 'This is a test todo',
+      completed: false,
+    } as NewTodo;
+    const todo = await insertTodo(newTodo);
+    const update = {
+      title: 'Partially Updated Test Todo',
+    };
+    const updatedTodo = await updateTodo(todo.id as UUID, userId, update);
+    expect(updatedTodo).toBeDefined();
+    expect(updatedTodo.id).toBe(todo.id);
+    expect(updatedTodo.title).toBe(update.title);
+    expect(updatedTodo.description).toBe(todo.description);
+    expect(updatedTodo.completed).toBeFalsy();
+  });
+
+  it('should return undefined if the userId does not match', async () => {
+    const userId1 = await insertUser('test@test.com', 'password123');
+    const userId2 = await insertUser('fake@fake.com', 'password123');
+    const newTodo = {
+      userId: userId1,
+      title: 'Test Todo',
+      description: 'This is a test todo',
+      completed: false,
+    } as NewTodo;
+    const todo = await insertTodo(newTodo);
+    const update = {
+      title: 'Updated Test Todo',
+      description: 'This is an updated test todo',
+      completed: true,
+    };
+    const updatedTodo = await updateTodo(todo.id as UUID, userId2, update);
+    expect(updatedTodo).toBeUndefined();
   });
 });

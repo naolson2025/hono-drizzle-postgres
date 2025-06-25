@@ -1,5 +1,11 @@
 import { type UUID } from 'crypto';
 
+export type UpdateTodo = {
+  title?: string;
+  description?: string;
+  completed?: boolean;
+};
+
 export type NewTodo = {
   userId: UUID;
   title: string;

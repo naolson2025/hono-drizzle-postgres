@@ -1,6 +1,6 @@
-import { NewTodo } from '../todos/types';
+import { NewTodo, UpdateTodo } from '../todos/types';
 import { todosTable, usersTable } from './schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { db } from './db';
 import type { UUID } from 'crypto';
 
@@ -56,6 +56,23 @@ export const deleteTodo = async (todoId: UUID) => {
   const [result] = await db
     .delete(todosTable)
     .where(eq(todosTable.id, todoId))
+    .returning();
+
+  return result;
+};
+
+export const updateTodo = async (
+  todoId: UUID,
+  userId: UUID,
+  update: UpdateTodo
+) => {
+  const [result] = await db
+    .update(todosTable)
+    .set({
+      ...update,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(todosTable.id, todoId), eq(todosTable.userId, userId)))
     .returning();
 
   return result;
