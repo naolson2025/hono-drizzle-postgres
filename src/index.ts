@@ -18,8 +18,11 @@ if (!process.env.DATABASE_URL) {
 
 const app = new Hono();
 
+if (process.env.NODE_ENV !== 'test') {
+  app.use(logger());
+}
+
 app
-  .use(logger())
   .use('/api/*', csrf())
   .use('*', async (c, next) => {
     if (c.req.path.includes('protected')) {

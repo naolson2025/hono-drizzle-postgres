@@ -1,3 +1,5 @@
+import { NewTodo } from '../todos/types';
+
 export const signupReq = (
   email = 'test@test.com',
   password = 'password123'
@@ -33,5 +35,23 @@ export const logoutReq = () => {
     headers: {
       'Content-Type': 'application/json',
     },
+  });
+};
+
+export const createTodoReq = (
+  cookie?: string,
+  newTodo?: Omit<NewTodo, 'userId'>
+) => {
+  return new Request('http://localhost/api/protected/todos', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: cookie || '',
+    },
+    body: JSON.stringify({
+      title: newTodo?.title || 'Default Todo Title',
+      description: newTodo?.description || 'Default Todo Description',
+      completed: newTodo?.completed || false,
+    }),
   });
 };

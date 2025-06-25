@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import app from '.';
-import { loginReq, logoutReq, signupReq } from './test/test-helpers';
+import {
+  createTodoReq,
+  loginReq,
+  logoutReq,
+  signupReq,
+} from './test/test-helpers';
 
 describe('signup endpoint', () => {
   it('should signup a user', async () => {
@@ -111,17 +116,7 @@ describe('logout', () => {
 
 describe('create todo', () => {
   it('should return 401 if user is not authenticated', async () => {
-    const req = new Request('http://localhost/api/protected/todos', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: 'Test Todo',
-        description: 'This is a test todo',
-        completed: false,
-      }),
-    });
+    const req = createTodoReq();
     const res = await app.fetch(req);
     const resText = await res.text();
     expect(res.status).toBe(401);
@@ -135,29 +130,121 @@ describe('create todo', () => {
     expect(res.status).toBe(200);
 
     // create todo
-    const todoReq = new Request('http://localhost/api/protected/todos', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Cookie: res.headers.get('set-cookie') || '',
-      },
-      body: JSON.stringify({
-        title: 'Test Todo',
-        description: 'This is a test todo',
-        completed: false,
-      }),
-    });
+    const todoReq = createTodoReq(res.headers.get('set-cookie') || '');
     const todoRes = await app.fetch(todoReq);
     const json = await todoRes.json();
     expect(todoRes.status).toBe(201);
     expect(json).toEqual({
       id: expect.any(String),
       userId: expect.any(String),
-      title: 'Test Todo',
-      description: 'This is a test todo',
+      title: 'Default Todo Title',
+      description: 'Default Todo Description',
       completed: false,
       createdAt: expect.any(String),
       updatedAt: expect.any(String),
     });
+  });
+});
+
+describe('GET /todos', () => {
+  it('should return 401 if user is not authenticated', async () => {
+    const req = new Request('http://localhost/api/protected/todos', {
+      method: 'GET',
+    });
+    const res = await app.fetch(req);
+    expect(res.status).toBe(401);
+    const resText = await res.text();
+    expect(resText).toBe('Unauthorized');
+  });
+
+  it('should return todos for an authenticated user', async () => {
+    // signup a user
+    const req = signupReq();
+    const res = await app.fetch(req);
+    expect(res.status).toBe(200);
+
+    // create a todo
+    const todoReq = createTodoReq(res.headers.get('set-cookie') || '');
+    await app.fetch(todoReq);
+
+    // get todos
+    const getTodosReq = new Request('http://localhost/api/protected/todos', {
+      method: 'GET',
+      headers: {
+        Cookie: res.headers.get('set-cookie') || '',
+      },
+    });
+    const getTodosRes = await app.fetch(getTodosReq);
+    expect(getTodosRes.status).toBe(200);
+    const todosJson = await getTodosRes.json();
+    expect(todosJson).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: expect.any(String),
+          userId: expect.any(String),
+          title: 'Default Todo Title',
+          description: 'Default Todo Description',
+          completed: false,
+          createdAt: expect.any(String),
+          updatedAt: expect.any(String),
+        }),
+      ])
+    );
+  });
+});
+
+describe('PATCH /todos/:id', () => {
+  it('should return 401 if user is not authenticated', async () => {
+    const req = new Request('http://localhost/api/protected/todos/1', {
+      method: 'PATCH',
+    });
+    const res = await app.fetch(req);
+    expect(res.status).toBe(403);
+    const resText = await res.text();
+    expect(resText).toBe('Forbidden');
+  });
+
+  it('should update a todo for an authenticated user', async () => {
+    // signup a user
+    const req = signupReq();
+    const res = await app.fetch(req);
+    expect(res.status).toBe(200);
+
+    // create a todo
+    const todoReq = createTodoReq(res.headers.get('set-cookie') || '');
+    const todoRes = await app.fetch(todoReq);
+    expect(todoRes.status).toBe(201);
+    const todoJson = await todoRes.json();
+
+    // update the todo
+    const updateTodoReq = new Request(
+      `http://localhost/api/protected/todos/${todoJson.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Cookie: res.headers.get('set-cookie') || '',
+        },
+        body: JSON.stringify({
+          title: 'Updated Todo Title',
+          description: 'Updated Todo Description',
+          completed: true,
+        }),
+      }
+    );
+    const updateTodoRes = await app.fetch(updateTodoReq);
+    expect(updateTodoRes.status).toBe(200);
+    const updatedTodoJson = await updateTodoRes.json();
+    expect(updatedTodoJson).toEqual(
+      expect.objectContaining({
+        id: todoJson.id,
+        userId: todoJson.userId,
+        title: 'Updated Todo Title',
+        description: 'Updated Todo Description',
+        completed: true,
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      })
+    );
   });
 });
